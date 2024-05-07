@@ -87,3 +87,21 @@ vscode 의 터미널창에는 다음과 같이 보여짐.
 
 ## Function App 에 배포시
 local.settings.json 의 내용을 Configuration 의 Environment Variables 에 등록 필요.
+
+# 2024-05-07 application insight 추가
+요청에 대한 구간별 응답시간을 확인하기위해 application insights 를 추가 하면 다음과 같이 구간별 상세 시간을 추적할수있음.
+![](images/2024-05-07-13-04-50.png)
+
+![](images/2024-05-07-11-58-35.png)
+
+![](images/2024-05-07-13-04-15.png)
+
+## 요청 추적 
+![](images/2024-05-07-13-06-45.png)
+Bot Emulator나 Teams 에서 메시지 테스트 후 약 30초 이후 기록되는 이벤트를 추적하기 위해서
+Performance 선택 후, http_trigger 선택, Samples 버튼 선택, 정렬을 날짜 기준으로 변경 후, 가장 상위(마지막) 요청에 대해 확인
+
+![](images/2024-05-07-13-09-51.png)
+message_chunking 이벤트를 선택하고 우측 `Traces & events` 클릭 시 다음처럼 시간순으로 어떤 이벤트가 발생되었는지 Dependency와 함께 상세 정보 확인 가능
+
+![](images/2024-05-07-13-11-37.png)

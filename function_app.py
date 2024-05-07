@@ -27,10 +27,21 @@ from config import DefaultConfig
 from skill_adapter_with_error_handler import AdapterWithErrorHandler
 # bot 을 위한 참조 패키지 - 끝
 
+# application insights 를 위한 코드 - 시작
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry import trace
+from opentelemetry.propagate import extract
+from opentelemetry.context import attach, detach
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+configure_azure_monitor()
+OpenAIInstrumentor().instrument()
+# application insights 를 위한 코드 - 끝
 
 # bot 관련 코드 - 시작
 
 CONFIG = DefaultConfig()
+
 
 # Create MemoryStorage, UserState and ConversationState
 MEMORY = MemoryStorage()
@@ -56,7 +67,7 @@ BOT = AoaiBot(conversation_state=CONVERSATION_STATE, user_state=USER_STATE, conf
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 @app.route(route="messages")
-async def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
+async def http_trigger(req: func.HttpRequest, context) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     # name = req.params.get('name')
@@ -76,6 +87,16 @@ async def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     #          status_code=200
     #     )
     
+    functions_current_context = {
+        "traceparent": context.trace_context.Traceparent,
+        "tracestate": context.trace_context.Tracestate
+    }
+    parent_context = TraceContextTextMapPropagator().extract(
+        carrier=functions_current_context
+    )
+    token = attach(parent_context)
+    
+    
     # Main bot message handler.
     if "application/json" in req.headers["Content-Type"]:
         body = req.get_json()
@@ -90,6 +111,7 @@ async def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     if invoke_response:
         return json_response(data=invoke_response.body, status=invoke_response.status)
     
+    detach(token)
     # return Response(status=HTTPStatus.OK)
     return func.HttpResponse(status_code=HTTPStatus.OK)
 
